@@ -1,26 +1,56 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7fafb;
+  --foreground: #0f2330;
+  --card: #ffffff;
+  --muted: #d9e5ea;
+  --accent: #0f766e;
+  --danger: #be123c;
+  --ok: #0f766e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-space-mono);
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at 10% 5%, #d8eef4 0%, transparent 34%),
+    radial-gradient(circle at 95% 10%, #e6f1e8 0%, transparent 28%),
+    linear-gradient(180deg, #f7fafb 0%, #eef4f7 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-plex-sans), sans-serif;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #97adb7 transparent;
+}
+
+::selection {
+  color: #ffffff;
+  background: #0f766e;
+}
+
+@keyframes ux-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ux-fade-in {
+  animation: ux-fade-in 0.34s ease-out both;
+}
+
+.ux-fade-in-delay {
+  animation: ux-fade-in 0.44s ease-out 0.06s both;
 }
