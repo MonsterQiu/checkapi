@@ -21,9 +21,12 @@ type CacheEnvelope = {
 function toSummary(data: CheckApiSuccess["data"]): string {
   const modelsPreview = data.models.slice(0, 8).join(", ") || "无";
   const actions = data.next_actions.join(" | ") || "无";
+  const modeLabel = data.meta.strict_mode ? "strict_target" : "catalog";
 
   return [
     `Provider: ${data.provider}`,
+    `Mode: ${modeLabel}`,
+    `Target Model: ${data.meta.target_model ?? "none"}`,
     `Availability: ${data.availability}`,
     `Models(${data.models.length}): ${modelsPreview}`,
     `Quota: ${data.quota_status}`,
@@ -57,6 +60,8 @@ function parseCache(raw: string | null): CacheEnvelope | null {
 export default function Home() {
   const [provider, setProvider] = useState<Provider>("auto");
   const [apiKey, setApiKey] = useState("");
+  const [strictMode, setStrictMode] = useState(false);
+  const [targetModel, setTargetModel] = useState("gpt-5.3-codex");
   const [allowLocalCache, setAllowLocalCache] = useState(true);
   const [requestState, setRequestState] = useState<RequestState>("idle");
   const [result, setResult] = useState<CheckApiSuccess["data"] | null>(null);
@@ -163,6 +168,11 @@ export default function Home() {
         body: JSON.stringify({
           provider,
           api_key: apiKey.trim(),
+          strict_mode: strictMode,
+          target_model:
+            strictMode && targetModel.trim().length > 0
+              ? targetModel.trim()
+              : undefined,
         }),
       });
 
@@ -298,11 +308,49 @@ export default function Home() {
                 允许浏览器本地暂存 2 分钟
               </label>
 
+              <label className="flex items-center gap-2 rounded-xl border border-[#d7e6ea] bg-[#f8fbfc] px-3 py-2 text-sm text-[#264555]">
+                <input
+                  type="checkbox"
+                  checked={strictMode}
+                  onChange={(event) => setStrictMode(event.target.checked)}
+                  className="h-4 w-4 rounded border-[#9eb8c2] text-[#0f766e] focus:ring-[#0f766e]"
+                />
+                严格权限检测（仅验证指定模型）
+              </label>
+
+              {strictMode ? (
+                <div>
+                  <label
+                    htmlFor="target_model"
+                    className="block text-sm font-medium text-[#274757]"
+                  >
+                    目标模型 ID
+                  </label>
+                  <input
+                    id="target_model"
+                    name="target_model"
+                    type="text"
+                    value={targetModel}
+                    onChange={(event) => setTargetModel(event.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
+                    required={strictMode}
+                    placeholder="例如：gpt-5.3-codex"
+                    className="mt-2 h-11 w-full rounded-xl border border-[#c9dde4] bg-[#f9fcfd] px-3 text-sm text-[#12303e] outline-none ring-[#0f766e] transition focus:ring-2"
+                  />
+                  <p className="mt-2 text-xs text-[#55707c]">
+                    启用后会对该模型发起最小调用验证，结果可代表真实权限。
+                  </p>
+                </div>
+              ) : null}
+
               <div className="space-y-2">
                 <button
                   type="submit"
                   disabled={
-                    requestState === "checking" || apiKey.trim().length === 0
+                    requestState === "checking" ||
+                    apiKey.trim().length === 0 ||
+                    (strictMode && targetModel.trim().length === 0)
                   }
                   className="h-11 w-full rounded-xl bg-[#0f766e] px-4 text-sm font-semibold text-white transition hover:bg-[#0b5a54] disabled:cursor-not-allowed disabled:bg-[#7ea9a5]"
                 >
@@ -372,7 +420,11 @@ export default function Home() {
                     </p>
                   </div>
                   <div className="rounded-xl border border-[#d8e5ea] bg-[#f8fbfc] p-3">
-                    <p className="text-xs text-[#4b6977]">可用模型数</p>
+                    <p className="text-xs text-[#4b6977]">
+                      {result.meta.strict_mode
+                        ? "通过验证模型数"
+                        : "平台返回模型数"}
+                    </p>
                     <p className="mt-1 text-sm font-semibold text-[#123a48]">
                       {result.models.length}
                     </p>
@@ -393,11 +445,20 @@ export default function Home() {
                     </span>
                   </p>
                   <p className="mt-1">检测耗时：{result.meta.duration_ms}ms</p>
+                  <p className="mt-1">
+                    检测模式：
+                    {result.meta.strict_mode ? "严格权限检测" : "平台目录检测"}
+                    {result.meta.strict_mode && result.meta.target_model
+                      ? `（${result.meta.target_model}）`
+                      : ""}
+                  </p>
                 </div>
 
                 <div>
                   <p className="mb-2 text-sm font-semibold text-[#12303e]">
-                    模型列表
+                    {result.meta.strict_mode
+                      ? "严格模式验证模型"
+                      : "平台返回模型目录"}
                   </p>
                   <div className="max-h-36 overflow-auto rounded-xl border border-[#d8e5ea] bg-[#f9fcfd] p-2">
                     {result.models.length > 0 ? (
@@ -412,9 +473,20 @@ export default function Home() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-xs text-[#5a7581]">未返回可用模型</p>
+                      <p className="text-xs text-[#5a7581]">
+                        {result.meta.strict_mode
+                          ? "目标模型验证未通过或无权限"
+                          : "未返回模型目录"}
+                      </p>
                     )}
                   </div>
+                  {!result.meta.strict_mode ? (
+                    <p className="mt-2 text-xs text-[#6a3e18]">
+                      注意：平台返回模型目录不等于当前 Key
+                      的实际调用权限白名单。
+                      若需精确判断，请启用“严格权限检测”并填写目标模型。
+                    </p>
+                  ) : null}
                 </div>
 
                 {result.errors.length > 0 ? (

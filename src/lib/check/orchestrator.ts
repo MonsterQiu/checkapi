@@ -12,6 +12,10 @@ export async function runCheckOrchestration(params: {
   const providerResult = await runProviderCheck({
     provider: params.input.provider,
     apiKey: params.input.api_key,
+    strictMode: params.input.strict_mode,
+    targetModel: params.input.strict_mode
+      ? (params.input.target_model ?? null)
+      : null,
   });
 
   const healthScore = calculateHealthScore({
@@ -38,6 +42,8 @@ export async function runCheckOrchestration(params: {
       request_id: params.requestId,
       checked_at: new Date().toISOString(),
       duration_ms: Date.now() - startedAt,
+      strict_mode: providerResult.mode === "strict_target",
+      target_model: providerResult.target_model,
     },
   };
 

@@ -15,6 +15,13 @@ export const checkRequestSchema = z.object({
     .min(8, "API Key 长度太短")
     .max(256, "API Key 长度超出限制")
     .trim(),
+  strict_mode: z.boolean().optional().default(false),
+  target_model: z
+    .string()
+    .trim()
+    .min(1, "目标模型不能为空")
+    .max(120, "目标模型长度超出限制")
+    .optional(),
 });
 
 export type CheckRequest = z.infer<typeof checkRequestSchema>;
@@ -60,6 +67,8 @@ export const normalizedCheckResultSchema = z.object({
     request_id: z.string(),
     checked_at: z.string(),
     duration_ms: z.number().int().nonnegative(),
+    strict_mode: z.boolean(),
+    target_model: z.string().nullable(),
   }),
 });
 

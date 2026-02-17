@@ -44,9 +44,16 @@ npm run check
 ```json
 {
   "provider": "auto | openai | anthropic | openrouter",
-  "api_key": "sk-..."
+  "api_key": "sk-...",
+  "strict_mode": false,
+  "target_model": "gpt-5.3-codex"
 }
 ```
+
+说明：
+
+- `strict_mode=false`：返回平台目录模型（不等于权限白名单）。
+- `strict_mode=true`：仅验证 `target_model` 是否可被当前 Key 实际调用。
 
 响应核心字段：
 
